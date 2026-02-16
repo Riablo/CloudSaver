@@ -68,7 +68,7 @@ export class Cloud115Service {
 
   // 解析分享链接
   parseShareUrl(url: string): { shareCode: string; receiveCode?: string } {
-    const match = url.match(/115\.com\/s\/([^?]+)(?:\?password=(\w+))?/);
+    const match = url.match(/(?:115|115cdn|anxia)\.com\/s\/([^?]+)(?:\?password=(\w+))?/);
     if (!match) {
       throw new Error('无效的115分享链接');
     }

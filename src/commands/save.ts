@@ -25,7 +25,7 @@ export function saveCommand(program: Command): void {
 
         if (url) {
           // 验证URL格式
-          if (!url.includes('115.com/s/')) {
+          if (!url.match(/(?:115|115cdn|anxia)\.com\/s\//)) {
             console.log(chalk.red('❌ 无效的115分享链接'));
             return;
           }
@@ -38,7 +38,7 @@ export function saveCommand(program: Command): void {
               name: 'url',
               message: '请输入115分享链接:',
               validate: (input: string) => {
-                if (!input.includes('115.com/s/')) {
+                if (!input.match(/(?:115|115cdn|anxia)\.com\/s\//)) {
                   return '请输入有效的115分享链接';
                 }
                 return true;
@@ -86,36 +86,42 @@ export function saveCommand(program: Command): void {
             targetFolderName = config.cloud115.defaultFolderName;
           }
 
-          // 询问用户确认
-          const { confirm } = await inquirer.prompt([
-            {
-              type: 'confirm',
-              name: 'confirm',
-              message: `是否转存到 "${targetFolderName}" 文件夹?`,
-              default: true,
-            },
-          ]);
-
-          if (!confirm) {
-            // 列出文件夹让用户选择
-            console.log(chalk.blue('\n📂 获取文件夹列表...'));
-            const folders = await service.getFolderList('0');
-            
-            const { selectedFolder } = await inquirer.prompt([
+          // 检查是否是 TTY 环境
+          if (process.stdin.isTTY) {
+            // 询问用户确认
+            const { confirm } = await inquirer.prompt([
               {
-                type: 'list',
-                name: 'selectedFolder',
-                message: '选择目标文件夹:',
-                choices: [
-                  { name: '根目录', value: '0' },
-                  ...folders.map(f => ({ name: f.name, value: f.cid })),
-                ],
+                type: 'confirm',
+                name: 'confirm',
+                message: `是否转存到 "${targetFolderName}" 文件夹?`,
+                default: true,
               },
             ]);
-            
-            targetFolderId = selectedFolder;
-            targetFolderName = selectedFolder === '0' ? '根目录' : 
-              folders.find(f => f.cid === selectedFolder)?.name || '未知';
+
+            if (!confirm) {
+              // 列出文件夹让用户选择
+              console.log(chalk.blue('\n📂 获取文件夹列表...'));
+              const folders = await service.getFolderList('0');
+              
+              const { selectedFolder } = await inquirer.prompt([
+                {
+                  type: 'list',
+                  name: 'selectedFolder',
+                  message: '选择目标文件夹:',
+                  choices: [
+                    { name: '根目录', value: '0' },
+                    ...folders.map(f => ({ name: f.name, value: f.cid })),
+                  ],
+                },
+              ]);
+              
+              targetFolderId = selectedFolder;
+              targetFolderName = selectedFolder === '0' ? '根目录' : 
+                folders.find(f => f.cid === selectedFolder)?.name || '未知';
+            }
+          } else {
+            // 非 TTY 环境，自动确认
+            console.log(chalk.gray(`自动选择 "${targetFolderName}" 文件夹`));
           }
         }
 
